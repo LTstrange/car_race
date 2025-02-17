@@ -5,6 +5,8 @@ use bevy::{
     prelude::*,
 };
 
+use crate::follow_cam::FollowCamera;
+
 pub struct CarPlugin;
 
 impl Plugin for CarPlugin {
@@ -12,14 +14,12 @@ impl Plugin for CarPlugin {
         app.add_systems(Startup, setup).add_systems(
             FixedUpdate,
             (
-                suspension,
-                steering,
-                acceleration,
+                (suspension, steering, acceleration).chain(),
                 turn_system,
                 reset_car.run_if(input_just_pressed(KeyCode::Space)),
             ),
         );
-        app.add_systems(Update, gizmos);
+        // app.add_systems(Update, gizmos);
     }
 }
 
@@ -76,13 +76,16 @@ impl CarConfig {
                 MeshMaterial3d(self.car_mat_handle),
                 RigidBody::Dynamic,
                 Collider::cuboid(1.2, 0.5, 2.93),
+                ColliderDensity(5.0),
                 ExternalForce::ZERO.with_persistence(false),
             ))
             .id();
 
+        let y_offset = -0.1;
+
         let fr_t = Tire.construct(
             commands,
-            Vec3::new(0.6, 0.0, -0.884),
+            Vec3::new(0.6, y_offset, -0.884),
             rest_dist + buffer,
             parent,
             true,
@@ -90,7 +93,7 @@ impl CarConfig {
         );
         let fl_t = Tire.construct(
             commands,
-            Vec3::new(-0.6, 0.0, -0.884),
+            Vec3::new(-0.6, y_offset, -0.884),
             rest_dist + buffer,
             parent,
             true,
@@ -98,7 +101,7 @@ impl CarConfig {
         );
         let rr_t = Tire.construct(
             commands,
-            Vec3::new(0.6, 0.0, 0.884),
+            Vec3::new(0.6, y_offset, 0.884),
             rest_dist + buffer,
             parent,
             false,
@@ -106,7 +109,7 @@ impl CarConfig {
         );
         let rl_t = Tire.construct(
             commands,
-            Vec3::new(-0.6, 0.0, 0.884),
+            Vec3::new(-0.6, y_offset, 0.884),
             rest_dist + buffer,
             parent,
             false,
@@ -115,11 +118,8 @@ impl CarConfig {
 
         commands
             .entity(parent)
-            .add_children(&[fr_t, fl_t, rr_t, rl_t])
-            .with_child((
-                Camera3d::default(),
-                Transform::from_xyz(0.0, 3.0, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ));
+            .add_children(&[fr_t, fl_t, rr_t, rl_t]);
+
         parent
     }
 }
@@ -198,33 +198,29 @@ fn setup(
 
     let suspension = SuspensionConfig {
         rest_dist: 0.6,
-        spring_strength: 20.0,
-        damper: 1.0,
-        buffer: 0.0,
+        spring_strength: 100.0,
+        damper: 25.0,
+        buffer: 0.1,
     };
     let steering = SteeringConfig {
-        tire_grip_factor: 0.5,
+        tire_grip_factor: 0.3,
     };
 
     let acceleration = AccelerationConfig {
-        forward_force: 10.0,
-        backward_force: -10.0,
+        forward_force: 50.0,
+        backward_force: -50.0,
         friction: 0.1,
     };
 
     let car_config =
         CarConfig::new(mesh_h, mat_h, suspension, steering, acceleration).with_front_wheel_drive();
 
-    car_config.construct(&mut commands);
+    let car = car_config.construct(&mut commands);
+
+    commands.spawn((FollowCamera(car, Vec3::new(0.0, 3.0, 9.0))));
 }
 
-// const REST_DIST: f32 = 0.6;
-// const SPRING_STRENGTH: f32 = 20.0;
-// const DAMPER: f32 = 1.0;
-
-// const TIRE_GRIP_FACTOR: f32 = 0.5;
-
-const GIZMOS_FORCE_FACTOER: f32 = 0.5;
+const GIZMOS_FORCE_FACTOER: f32 = 0.1;
 
 fn get_point_velocity(point: Vec3, linear_vel: Vec3, angular_vel: Vec3, center: Vec3) -> Vec3 {
     linear_vel + angular_vel.cross(point - center)
@@ -233,7 +229,7 @@ fn get_point_velocity(point: Vec3, linear_vel: Vec3, angular_vel: Vec3, center: 
 fn suspension(
     mut cars: Query<
         (
-            &GlobalTransform,
+            &Transform,
             &LinearVelocity,
             &AngularVelocity,
             &mut ExternalForce,
@@ -245,9 +241,9 @@ fn suspension(
     rays: Query<(&RayCaster, &RayHits)>,
     mut gizmos: Gizmos,
 ) {
-    for (glob_trans, l_vel, a_vel, mut eforce, config, children) in &mut cars {
-        let center_mass = glob_trans.translation();
-        let up_dir = glob_trans.up();
+    for (car_trans, l_vel, a_vel, mut eforce, config, children) in &mut cars {
+        let center_mass = car_trans.translation;
+        let up_dir = car_trans.up();
         for child in children.iter() {
             // find ray_casters
             if let Ok((ray, hits)) = rays.get(*child) {
@@ -282,7 +278,7 @@ fn suspension(
 fn steering(
     mut cars: Query<
         (
-            &GlobalTransform,
+            &Transform,
             &LinearVelocity,
             &AngularVelocity,
             &mut ExternalForce,
@@ -291,18 +287,18 @@ fn steering(
         ),
         With<Car>,
     >,
-    rays: Query<(&GlobalTransform, &RayCaster, &RayHits)>,
+    rays: Query<(&Transform, &RayCaster, &RayHits)>,
     fixed_time: Res<Time<Fixed>>,
     mut gizmos: Gizmos,
 ) {
-    for (glob_trans, l_vel, a_vel, mut eforce, config, children) in &mut cars {
-        let center_mass = glob_trans.translation();
+    for (car_trans, l_vel, a_vel, mut eforce, config, children) in &mut cars {
+        let center_mass = car_trans.translation;
         for child in children.iter() {
             // find ray_casters
-            if let Ok((g_trans, ray, hits)) = rays.get(*child) {
+            if let Ok((ray_trans, ray, hits)) = rays.get(*child) {
                 // max hit = 1, so we can use iter().next()
                 if let Some(_) = hits.iter().next() {
-                    let right_dir = g_trans.right();
+                    let right_dir = car_trans.rotation * ray_trans.right();
                     let tire_global_vel =
                         get_point_velocity(ray.global_origin(), l_vel.0, a_vel.0, center_mass);
 
@@ -313,7 +309,7 @@ fn steering(
 
                     gizmos.arrow(
                         ray.global_origin(),
-                        ray.global_origin() + right_dir * desired_acc * 0.5,
+                        ray.global_origin() + right_dir * desired_acc * GIZMOS_FORCE_FACTOER,
                         RED,
                     );
 
@@ -331,7 +327,7 @@ fn steering(
 fn acceleration(
     mut cars: Query<
         (
-            &GlobalTransform,
+            &Transform,
             &LinearVelocity,
             &AngularVelocity,
             &mut ExternalForce,
@@ -340,20 +336,20 @@ fn acceleration(
         ),
         With<Car>,
     >,
-    rays: Query<(&GlobalTransform, &RayCaster, &RayHits), With<DriveWheel>>,
+    rays: Query<(&Transform, &RayCaster, &RayHits), With<DriveWheel>>,
     fixed_time: Res<Time<Fixed>>,
     keys: Res<ButtonInput<KeyCode>>,
     mut gizmos: Gizmos,
 ) {
-    for (glob_trans, l_vel, a_vel, mut eforce, config, children) in &mut cars {
-        let center_mass = glob_trans.translation();
+    for (car_trans, l_vel, a_vel, mut eforce, config, children) in &mut cars {
+        let center_mass = car_trans.translation;
         for child in children.iter() {
-            if let Ok((g_trans, ray, hits)) = rays.get(*child) {
+            if let Ok((ray_trans, ray, hits)) = rays.get(*child) {
                 if let Some(_) = hits.iter_sorted().next() {
                     let tire_global_vel =
                         get_point_velocity(ray.global_origin(), l_vel.0, a_vel.0, center_mass);
 
-                    let forward_dir = g_trans.forward();
+                    let forward_dir = car_trans.rotation * ray_trans.forward();
 
                     let forward_force = if keys.pressed(KeyCode::KeyW) {
                         config.forward_force
@@ -365,12 +361,12 @@ fn acceleration(
                         let forward_vel = forward_dir.dot(tire_global_vel);
                         let desired_vel_change = -forward_vel * config.friction;
                         let desired_acc = desired_vel_change / fixed_time.delta_secs();
-                        desired_acc.clamp(-1.0, 1.0)
+                        desired_acc.clamp(-5.0, 5.0)
                     };
 
                     gizmos.arrow(
                         ray.global_origin(),
-                        ray.global_origin() + forward_dir * forward_force * 0.5,
+                        ray.global_origin() + forward_dir * forward_force * GIZMOS_FORCE_FACTOER,
                         BLUE,
                     );
 

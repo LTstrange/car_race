@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 bevy = "0.15.2"
 avian3d = "0.2.1"
+bevy_rapier3d = { version = "*", features = [ "simd-stable", "debug-render-3d" ] }
+bevy-inspector-egui = "0.29.1"
+

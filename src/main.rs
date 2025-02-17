@@ -1,15 +1,25 @@
 use avian3d::{math::PI, prelude::*};
 use bevy::{color::palettes::css::GRAY, prelude::*};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 use car::CarPlugin;
+use follow_cam::FollowCameraPlugin;
+use orbit_camera::OrbitCameraPlugin;
+use play_ground::PlayGroundPlugin;
 
-mod camera;
 mod car;
+mod follow_cam;
+mod orbit_camera;
+mod play_ground;
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, CarPlugin))
-        .add_plugins((PhysicsPlugins::default(), PhysicsDebugPlugin::default()))
+        .add_plugins((DefaultPlugins, CarPlugin, FollowCameraPlugin))
+        .add_plugins((
+            PhysicsPlugins::default(),
+            PhysicsDebugPlugin::default(),
+            WorldInspectorPlugin::new(),
+        ))
         .add_systems(Startup, setup)
         .add_systems(Update, gizmos)
         .run();

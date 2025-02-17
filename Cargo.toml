@@ -1,0 +1,8 @@
+[package]
+name = "car_race"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = "0.15.2"
+avian3d = "0.2.1"

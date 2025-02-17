@@ -217,7 +217,7 @@ fn setup(
 
     let car = car_config.construct(&mut commands);
 
-    commands.spawn((FollowCamera(car, Vec3::new(0.0, 3.0, 9.0))));
+    commands.spawn(FollowCamera(car, Vec3::new(0.0, 3.0, 9.0)));
 }
 
 const GIZMOS_FORCE_FACTOER: f32 = 0.1;
@@ -423,11 +423,5 @@ fn reset_car(
         eforce.clear();
         l_vel.0 = Vec3::ZERO;
         a_vel.0 = Vec3::ZERO;
-    }
-}
-
-fn gizmos(rays: Query<&GlobalTransform, With<RayCaster>>, mut gizmos: Gizmos) {
-    for g_trans in &rays {
-        gizmos.axes(g_trans.compute_transform(), 0.5);
     }
 }

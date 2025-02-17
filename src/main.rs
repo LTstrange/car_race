@@ -4,13 +4,10 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 use car::CarPlugin;
 use follow_cam::FollowCameraPlugin;
-use orbit_camera::OrbitCameraPlugin;
-use play_ground::PlayGroundPlugin;
 
 mod car;
 mod follow_cam;
 mod orbit_camera;
-mod play_ground;
 
 fn main() {
     App::new()

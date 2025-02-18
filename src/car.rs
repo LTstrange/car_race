@@ -191,7 +191,7 @@ fn setup(
 ) {
     // Dynamic physics object with a collision shape and initial angular velocity
     let mesh_h = meshes.add(Cuboid::from_size(Vec3::new(1.2, 0.5, 2.93)));
-    let mat_h = materials.add(Color::srgba_u8(124, 144, 255, 200));
+    let mat_h = materials.add(Color::srgba_u8(124, 144, 255, 255));
 
     let suspension = SuspensionConfig {
         rest_dist: 0.6,

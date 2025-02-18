@@ -1,5 +1,8 @@
 use avian3d::{math::PI, prelude::*};
-use bevy::{color::palettes::css::GRAY, prelude::*};
+use bevy::{
+    color::palettes::css::{BLACK, GRAY},
+    prelude::*,
+};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 use car::CarPlugin;
@@ -14,7 +17,7 @@ fn main() {
         .add_plugins((DefaultPlugins, CarPlugin, FollowCameraPlugin))
         .add_plugins((
             PhysicsPlugins::default(),
-            PhysicsDebugPlugin::default(),
+            // PhysicsDebugPlugin::default(),
             WorldInspectorPlugin::new(),
         ))
         .add_systems(Startup, setup)
@@ -64,14 +67,28 @@ fn setup(
         },
         Transform::from_xyz(4.0, 8.0, 4.0),
     ));
+
+    // Sunlight
+    commands.spawn((
+        DirectionalLight {
+            illuminance: light_consts::lux::OVERCAST_DAY,
+            shadows_enabled: true,
+            ..default()
+        },
+        Transform {
+            translation: Vec3::new(0.0, 2.0, 0.0),
+            rotation: Quat::from_rotation_x(-PI / 4.),
+            ..default()
+        },
+    ));
 }
 
 fn gizmos(mut gizmos: Gizmos) {
     gizmos.axes(Transform::IDENTITY, 10.0);
     gizmos.grid(
         Isometry3d::from_rotation(Quat::from_rotation_x(PI / 2.0)),
-        UVec2::new(200, 200),
-        Vec2::splat(1.0),
-        GRAY.with_alpha(0.5),
+        UVec2::new(20, 20),
+        Vec2::splat(10.0),
+        BLACK.with_alpha(0.5),
     );
 }

@@ -70,7 +70,7 @@ impl CarConfig {
                 self.acceleration,
                 Mesh3d(self.car_mesh_handle),
                 MeshMaterial3d(self.car_mat_handle),
-                // TransformInterpolation,
+                TransformInterpolation,
                 RigidBody::Dynamic,
                 Collider::cuboid(1.2, 0.5, 2.93),
                 ColliderDensity(5.0),

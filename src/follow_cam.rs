@@ -4,7 +4,7 @@ pub struct FollowCameraPlugin;
 
 impl Plugin for FollowCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, follow_camera);
+        app.add_systems(Update, follow_camera);
     }
 }
 

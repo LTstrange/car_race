@@ -1,9 +1,5 @@
 use avian3d::{math::PI, prelude::*};
-use bevy::{
-    color::palettes::css::{BLUE, GREEN, RED},
-    input::common_conditions::input_just_pressed,
-    prelude::*,
-};
+use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 
 use crate::follow_cam::FollowCamera;
 
@@ -74,6 +70,7 @@ impl CarConfig {
                 self.acceleration,
                 Mesh3d(self.car_mesh_handle),
                 MeshMaterial3d(self.car_mat_handle),
+                // TransformInterpolation,
                 RigidBody::Dynamic,
                 Collider::cuboid(1.2, 0.5, 2.93),
                 ColliderDensity(5.0),
@@ -194,7 +191,7 @@ fn setup(
 ) {
     // Dynamic physics object with a collision shape and initial angular velocity
     let mesh_h = meshes.add(Cuboid::from_size(Vec3::new(1.2, 0.5, 2.93)));
-    let mat_h = materials.add(Color::srgba_u8(124, 144, 255, 100));
+    let mat_h = materials.add(Color::srgba_u8(124, 144, 255, 200));
 
     let suspension = SuspensionConfig {
         rest_dist: 0.6,
@@ -220,7 +217,7 @@ fn setup(
     commands.spawn(FollowCamera(car, Vec3::new(0.0, 3.0, 9.0)));
 }
 
-const GIZMOS_FORCE_FACTOER: f32 = 0.1;
+// const GIZMOS_FORCE_FACTOER: f32 = 0.1;
 
 fn get_point_velocity(point: Vec3, linear_vel: Vec3, angular_vel: Vec3, center: Vec3) -> Vec3 {
     linear_vel + angular_vel.cross(point - center)
@@ -239,7 +236,7 @@ fn suspension(
         With<Car>,
     >,
     rays: Query<(&RayCaster, &RayHits)>,
-    mut gizmos: Gizmos,
+    // mut gizmos: Gizmos,
 ) {
     for (car_trans, l_vel, a_vel, mut eforce, config, children) in &mut cars {
         let center_mass = car_trans.translation;
@@ -258,11 +255,11 @@ fn suspension(
 
                     let up_force = (config.spring_strength * offset) - (config.damper * up_vel);
 
-                    gizmos.arrow(
-                        ray.global_origin(),
-                        ray.global_origin() + up_dir * up_force * GIZMOS_FORCE_FACTOER,
-                        GREEN,
-                    );
+                    // gizmos.arrow(
+                    //     ray.global_origin(),
+                    //     ray.global_origin() + up_dir * up_force * GIZMOS_FORCE_FACTOER,
+                    //     GREEN,
+                    // );
 
                     eforce.apply_force_at_point(
                         up_dir * up_force,
@@ -289,7 +286,7 @@ fn steering(
     >,
     rays: Query<(&Transform, &RayCaster, &RayHits)>,
     fixed_time: Res<Time<Fixed>>,
-    mut gizmos: Gizmos,
+    // mut gizmos: Gizmos,
 ) {
     for (car_trans, l_vel, a_vel, mut eforce, config, children) in &mut cars {
         let center_mass = car_trans.translation;
@@ -307,11 +304,11 @@ fn steering(
                     let desired_vel_change = -steering_vel * config.tire_grip_factor;
                     let desired_acc = desired_vel_change / fixed_time.delta_secs();
 
-                    gizmos.arrow(
-                        ray.global_origin(),
-                        ray.global_origin() + right_dir * desired_acc * GIZMOS_FORCE_FACTOER,
-                        RED,
-                    );
+                    // gizmos.arrow(
+                    //     ray.global_origin(),
+                    //     ray.global_origin() + right_dir * desired_acc * GIZMOS_FORCE_FACTOER,
+                    //     RED,
+                    // );
 
                     eforce.apply_force_at_point(
                         right_dir * desired_acc,
@@ -339,7 +336,7 @@ fn acceleration(
     rays: Query<(&Transform, &RayCaster, &RayHits), With<DriveWheel>>,
     fixed_time: Res<Time<Fixed>>,
     keys: Res<ButtonInput<KeyCode>>,
-    mut gizmos: Gizmos,
+    // mut gizmos: Gizmos,
 ) {
     for (car_trans, l_vel, a_vel, mut eforce, config, children) in &mut cars {
         let center_mass = car_trans.translation;
@@ -364,11 +361,11 @@ fn acceleration(
                         desired_acc.clamp(-5.0, 5.0)
                     };
 
-                    gizmos.arrow(
-                        ray.global_origin(),
-                        ray.global_origin() + forward_dir * forward_force * GIZMOS_FORCE_FACTOER,
-                        BLUE,
-                    );
+                    // gizmos.arrow(
+                    //     ray.global_origin(),
+                    //     ray.global_origin() + forward_dir * forward_force * GIZMOS_FORCE_FACTOER,
+                    //     BLUE,
+                    // );
 
                     eforce.apply_force_at_point(
                         forward_dir * forward_force,
